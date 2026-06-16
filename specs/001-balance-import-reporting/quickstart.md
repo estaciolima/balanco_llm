@@ -127,6 +127,12 @@ docker compose exec web pytest app/tests/contract
 docker compose exec web pytest app/tests/e2e
 ```
 
+Current local shortcut during development:
+
+```powershell
+.venv\Scripts\python.exe -m pytest app/tests
+```
+
 ## Performance Checks
 
 - PDF upload request completes within 5 seconds for files up to 25 MB.

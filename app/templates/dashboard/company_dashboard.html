@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load dashboard_extras %}
+
+{% block title %}Dashboard - {{ company }}{% endblock %}
+
+{% block content %}
+  <section class="page">
+    <div class="page-header">
+      <div>
+        <h1>{{ company }} dashboard</h1>
+        <p>Compare approved standardized values across reporting periods.</p>
+      </div>
+      <div class="actions">
+        <a class="button button-secondary" href="{% url 'company-detail' company.id %}">Back to company</a>
+      </div>
+    </div>
+    <section class="panel panel-stack">
+      <form method="get">
+        {{ form.as_p }}
+        <div class="form-actions">
+          <button type="submit">Apply filters</button>
+        </div>
+      </form>
+    </section>
+    <section class="panel panel-stack">
+      <div class="section-title">
+        <h2>Balance comparison</h2>
+        <span class="subtle">{{ rows|length }} value{{ rows|length|pluralize }}</span>
+      </div>
+      {% if matrix.rows %}
+        <table class="data-table financial-table">
+          <thead>
+            <tr>
+              <th>BALANCO</th>
+              {% for period in matrix.periods %}
+                <th>{{ period.label }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% regroup matrix.rows by section as section_groups %}
+            {% for section_group in section_groups %}
+              {% if section_group.grouper == "liquidity" %}
+                <tr class="financial-section-row">
+                  <th>LIQUIDEZ</th>
+                  {% for period in matrix.periods %}
+                    <th>{{ period.label }}</th>
+                  {% endfor %}
+                </tr>
+              {% endif %}
+              {% for row in section_group.list %}
+                <tr class="{% if row.is_highlight %}financial-highlight{% endif %} financial-level-{{ row.display_level }}">
+                  <td>{{ row.label }}</td>
+                  {% for period in matrix.periods %}
+                    {% with cell=row.values|dict_get:period.label %}
+                      <td class="numeric">
+                        {% if cell %}
+                          {% if row.line_type == "ratio" %}
+                            {{ cell.value|floatformat:1 }}
+                          {% else %}
+                            {{ cell.value|floatformat:0 }}
+                          {% endif %}
+                        {% else %}
+                          <span class="subtle">-</span>
+                        {% endif %}
+                      </td>
+                    {% endwith %}
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="empty-state">No approved values available for the selected filters.</div>
+      {% endif %}
+      <script id="chart-data" type="application/json">{{ chart_series|safe }}</script>
+    </section>
+  </section>
+{% endblock %}

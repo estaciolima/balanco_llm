@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}{{ company }}{% endblock %}
+
+{% block content %}
+  <section class="page">
+    <div class="page-header">
+      <div>
+        <h1>{{ company }}</h1>
+        <p>Track uploaded balance documents, processing status and reporting history.</p>
+      </div>
+      <div class="actions">
+        <a class="button button-secondary" href="{% url 'company-dashboard' company.id %}">Open dashboard</a>
+        <a class="button" href="{% url 'document-upload' company.id %}">Upload PDF</a>
+      </div>
+    </div>
+    <section class="panel panel-stack">
+      <div class="stats-grid">
+        <div class="stat">
+          <span class="stat-label">Company status</span>
+          <span class="stat-value">{{ company.get_status_display }}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Documents</span>
+          <span class="stat-value">{{ company.documents.count }}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Reporting periods</span>
+          <span class="stat-value">{{ company.reporting_periods.count }}</span>
+        </div>
+      </div>
+      <div class="section-title">
+        <h2>Documents</h2>
+      </div>
+      {% if company.documents.all %}
+        <ul class="list">
+          {% for document in company.documents.all %}
+            <li class="list-row">
+              <div>
+                <strong><a href="{% url 'document-detail' document.id %}">{{ document.original_filename }}</a></strong>
+                <p>Uploaded {{ document.created_at|date:"Y-m-d H:i" }}</p>
+              </div>
+              <div class="actions">
+                <span class="badge">{{ document.get_upload_status_display }}</span>
+                <a class="button-secondary button" href="{% url 'document-detail' document.id %}">Details</a>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="empty-state">No documents uploaded yet. Start by sending the first company balance PDF.</div>
+      {% endif %}
+    </section>
+  </section>
+{% endblock %}

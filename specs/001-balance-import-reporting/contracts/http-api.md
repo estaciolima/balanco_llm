@@ -65,7 +65,7 @@ Uploads a balance PDF for processing.
 **Request**:
 
 - Multipart form with `file`
-- Optional `period_label`
+- Required `fiscal_year`
 - Optional `notes`
 
 **Expected Behavior**:
@@ -151,8 +151,8 @@ Shows year-over-year comparison for approved standardized values.
 
 **Query Parameters**:
 
-- `period_start`
-- `period_end`
+- `start_year`: optional year selected from years already loaded for the company
+- `end_year`: optional year selected from years already loaded for the company
 - `category`
 - `currency`
 

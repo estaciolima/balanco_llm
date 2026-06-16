@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Upload PDF{% endblock %}
+
+{% block content %}
+  <section class="page">
+    <div class="page-header">
+      <div>
+        <h1>Upload PDF for {{ company }}</h1>
+        <p>Accepted documents are preserved raw, fingerprinted and queued for processing.</p>
+      </div>
+      <div class="actions">
+        <a class="button button-secondary" href="{% url 'company-detail' company.id %}">Back to company</a>
+      </div>
+    </div>
+    <section class="panel">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="form-actions">
+          <button type="submit">Upload document</button>
+        </div>
+      </form>
+    </section>
+  </section>
+{% endblock %}

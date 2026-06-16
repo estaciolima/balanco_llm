@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}{{ document.original_filename }}{% endblock %}
+
+{% block content %}
+  <section class="page">
+    <div class="page-header">
+      <div>
+        <h1>{{ document.original_filename }}</h1>
+        <p>Inspect source metadata, raw file access and the processing history for this document.</p>
+      </div>
+      <div class="actions">
+        <a class="button button-secondary" href="{% url 'company-detail' document.company.id %}">Back to company</a>
+        <a class="button button-secondary" href="{{ document.file.url }}" target="_blank" rel="noreferrer">Open raw PDF</a>
+        <form method="post" action="{% url 'document-reprocess' document.id %}">
+          {% csrf_token %}
+          <button type="submit">Reprocess</button>
+        </form>
+      </div>
+    </div>
+    <section class="panel panel-stack">
+      <dl class="meta-grid">
+        <div class="meta-item">
+          <dt>Company</dt>
+          <dd><a href="{% url 'company-detail' document.company.id %}">{{ document.company }}</a></dd>
+        </div>
+        <div class="meta-item">
+          <dt>Status</dt>
+          <dd>{{ document.get_upload_status_display }}</dd>
+        </div>
+        <div class="meta-item">
+          <dt>Balance year</dt>
+          <dd>{{ document.reporting_period.fiscal_year|default:"Not set" }}</dd>
+        </div>
+        <div class="meta-item">
+          <dt>Checksum</dt>
+          <dd>{{ document.sha256 }}</dd>
+        </div>
+        <div class="meta-item">
+          <dt>Uploaded at</dt>
+          <dd>{{ document.created_at|date:"Y-m-d H:i" }}</dd>
+        </div>
+      </dl>
+      <div class="section-title">
+        <h2>Processing runs</h2>
+      </div>
+      {% if document.processing_runs.all %}
+        <ul class="list">
+          {% for run in document.processing_runs.all %}
+            <li class="list-row">
+              <div>
+                <strong>Pipeline {{ run.pipeline_version }}</strong>
+                <p>Started {{ run.started_at|date:"Y-m-d H:i"|default:"Not started yet" }}</p>
+              </div>
+              <span class="badge">{{ run.get_status_display }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="empty-state">No processing runs available yet.</div>
+      {% endif %}
+    </section>
+  </section>
+{% endblock %}

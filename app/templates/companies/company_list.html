@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Companies{% endblock %}
+
+{% block content %}
+  <section class="page">
+    <div class="page-header">
+      <div>
+        <h1>Companies</h1>
+        <p>Manage company records and open their document and reporting workspace.</p>
+      </div>
+      <div class="actions">
+        <a class="button" href="{% url 'company-create' %}">New company</a>
+      </div>
+    </div>
+    <section class="panel panel-stack">
+      <form method="get" class="inline-form">
+        <div>
+          <label for="company-search">Search companies</label>
+          <input id="company-search" type="search" name="q" value="{{ query }}" placeholder="Legal or display name">
+        </div>
+        <div class="form-actions">
+          <button type="submit">Search</button>
+        </div>
+      </form>
+      {% if companies %}
+        <ul class="list">
+          {% for company in companies %}
+            <li class="list-row">
+              <div>
+                <strong><a href="{% url 'company-detail' company.id %}">{{ company }}</a></strong>
+                <p>{{ company.legal_name }}</p>
+              </div>
+              <div class="actions">
+                <span class="badge">{{ company.get_status_display }}</span>
+                <a class="button-secondary button" href="{% url 'company-detail' company.id %}">Open</a>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="empty-state">No companies found yet. Create the first one to start uploading balance PDFs.</div>
+      {% endif %}
+    </section>
+  </section>
+{% endblock %}

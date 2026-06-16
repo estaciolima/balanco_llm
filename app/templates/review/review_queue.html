@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Review Queue{% endblock %}
+
+{% block content %}
+  <section class="page">
+    <div class="page-header">
+      <div>
+        <h1>Review Queue</h1>
+        <p>Handle low-confidence extractions before approved values appear in the dashboard.</p>
+      </div>
+    </div>
+    <section class="panel">
+      {% if tasks %}
+        <ul class="list">
+          {% for task in tasks %}
+            <li class="list-row">
+              <div>
+                <strong><a href="{% url 'review-detail' task.id %}">{{ task.document.original_filename }}</a></strong>
+                <p>{{ task.get_reason_display }}{% if task.extracted_line_item %} · {{ task.extracted_line_item.source_label }}{% endif %}</p>
+              </div>
+              <div class="actions">
+                <span class="badge">{{ task.get_status_display }}</span>
+                <a class="button-secondary button" href="{% url 'review-detail' task.id %}">Review</a>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="empty-state">No review tasks pending right now.</div>
+      {% endif %}
+    </section>
+  </section>
+{% endblock %}

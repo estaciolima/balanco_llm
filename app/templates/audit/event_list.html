@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Events{% endblock %}
+
+{% block content %}
+  <section class="page">
+    <div class="page-header">
+      <div>
+        <h1>Audit events</h1>
+        <p>Track uploads, processing actions and review decisions across the system.</p>
+      </div>
+    </div>
+    <section class="panel">
+      {% if events %}
+        <ul class="list">
+          {% for event in events %}
+            <li class="list-row">
+              <div>
+                <strong>{{ event.event_type }}</strong>
+                <p>{{ event.target_type }} · {{ event.created_at|date:"Y-m-d H:i:s" }}</p>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="empty-state">No audit events found.</div>
+      {% endif %}
+    </section>
+  </section>
+{% endblock %}
