@@ -7,15 +7,13 @@ from companies.models import Company
 from documents.models import BalanceDocument
 from extraction.models import ExtractedLineItem, ProcessingRun, RawExtraction
 from extraction.pipeline import process_document
-from review.models import ReviewTask
-from standardization.models import StandardLineItem
 
 
 @pytest.mark.django_db
 @patch("extraction.pipeline.extract_tables")
 @patch("extraction.pipeline.extract_native_text")
 @patch("extraction.pipeline.detect_has_text")
-def test_processing_pipeline_creates_extractions_and_review_tasks(
+def test_processing_pipeline_creates_raw_extractions_and_candidate_line_items(
     mock_detect_has_text,
     mock_extract_native_text,
     mock_extract_tables,
@@ -42,12 +40,6 @@ def test_processing_pipeline_creates_extractions_and_review_tasks(
         uploaded_by=user,
     )
     run = ProcessingRun.objects.create(document=document, pipeline_version="2026.06")
-    StandardLineItem.objects.create(
-        code="cash_and_equivalents",
-        display_name="Caixa + Aplicacoes",
-        category=StandardLineItem.Category.ASSET,
-        source_account_patterns=["1.1.01*"],
-    )
 
     payloads = process_document(document, run)
 
@@ -58,5 +50,6 @@ def test_processing_pipeline_creates_extractions_and_review_tasks(
     assert item.source_account_code == "1.1.01"
     assert item.source_parent_account_code == "1.1"
     assert item.source_balance_nature == "D"
-    assert ReviewTask.objects.count() == 0
-    assert payloads["standardization_event"]["event_type"] == "document.standardization.completed"
+    assert item.suggested_standard_line_item is None
+    assert payloads["candidates_event"]["event_type"] == "document.candidates.parsed"
+    assert payloads["candidates_event"]["payload"]["created_line_item_count"] == 1

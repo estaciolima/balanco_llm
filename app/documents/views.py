@@ -43,8 +43,23 @@ def document_upload(request, company_id):
 
 @login_required
 def document_detail(request, document_id):
-    document = get_object_or_404(BalanceDocument.objects.select_related("company"), pk=document_id)
-    return render(request, "documents/document_detail.html", {"document": document})
+    document = get_object_or_404(
+        BalanceDocument.objects.select_related("company", "reporting_period").prefetch_related(
+            "processing_runs",
+            "extracted_line_items",
+        ),
+        pk=document_id,
+    )
+    line_items = document.extracted_line_items.order_by(
+        "source_account_code",
+        "source_hierarchy_level",
+        "source_label",
+    )
+    return render(
+        request,
+        "documents/document_detail.html",
+        {"document": document, "line_items": line_items},
+    )
 
 
 @login_required

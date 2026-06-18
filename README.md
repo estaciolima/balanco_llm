@@ -129,6 +129,7 @@ docker compose exec web python app/manage.py bootstrap_roles
 docker compose exec web python app/manage.py createsuperuser
 ```
 
+
 ### 3. Acessar a aplicacao
 
 - `http://127.0.0.1:8000/login/`

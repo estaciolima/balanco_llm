@@ -47,9 +47,11 @@ def run_document_pipeline(processing_run_id: str) -> str:
     run.status = ProcessingRun.Status.RUNNING
     run.started_at = timezone.now()
     run.save(update_fields=["status", "started_at"])
+    run.document.upload_status = BalanceDocument.UploadStatus.PROCESSING
+    run.document.save(update_fields=["upload_status", "updated_at"])
     try:
         event_payloads = process_document(run.document, run)
-        for event_name in ("text_event", "tables_event", "standardization_event"):
+        for event_name in ("text_event", "tables_event", "candidates_event"):
             payload = event_payloads.get(event_name)
             if payload:
                 record_audit_event(
@@ -62,6 +64,8 @@ def run_document_pipeline(processing_run_id: str) -> str:
         run.status = ProcessingRun.Status.SUCCEEDED
         run.finished_at = timezone.now()
         run.save(update_fields=["status", "finished_at"])
+        run.document.upload_status = BalanceDocument.UploadStatus.PROCESSED
+        run.document.save(update_fields=["upload_status", "updated_at"])
         record_audit_event(
             event_type="document.processing.completed",
             target_type="ProcessingRun",
@@ -75,6 +79,8 @@ def run_document_pipeline(processing_run_id: str) -> str:
         run.error_message = str(exc)
         run.finished_at = timezone.now()
         run.save(update_fields=["status", "error_code", "error_message", "finished_at"])
+        run.document.upload_status = BalanceDocument.UploadStatus.FAILED
+        run.document.save(update_fields=["upload_status", "updated_at"])
         failure_event = PipelineEvent(
             event_type="document.processing.failed",
             document_id=str(run.document.pk),

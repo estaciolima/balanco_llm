@@ -22,3 +22,4 @@ playwright-report/
 .vscode/
 Thumbs.db
 .DS_Store
+notebooks/

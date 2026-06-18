@@ -490,6 +490,17 @@ textarea:focus {
   overflow: hidden;
 }
 
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.table-scroll .data-table {
+  min-width: 980px;
+}
+
 .data-table th,
 .data-table td {
   padding: 14px 12px;
@@ -507,6 +518,12 @@ textarea:focus {
 
 .data-table tbody tr:hover {
   background: #fbfdff;
+}
+
+.data-table .numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .financial-table {
