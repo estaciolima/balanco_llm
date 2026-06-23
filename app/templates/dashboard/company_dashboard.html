@@ -8,7 +8,7 @@
     <div class="page-header">
       <div>
         <h1>{{ company }} dashboard</h1>
-        <p>Compare approved standardized values across reporting periods.</p>
+        <p>Compare the structured financial analysis generated for each reporting year.</p>
       </div>
       <div class="actions">
         <a class="button button-secondary" href="{% url 'company-detail' company.id %}">Back to company</a>
@@ -24,16 +24,25 @@
     </section>
     <section class="panel panel-stack">
       <div class="section-title">
-        <h2>Balance comparison</h2>
+        <h2>Comparação financeira por ano</h2>
         <span class="subtle">{{ rows|length }} value{{ rows|length|pluralize }}</span>
       </div>
       {% if matrix.rows %}
+        {% if matrix.source == "ai" %}
+          <p class="muted">Fonte: extração estruturada da IA. A variação compara cada ano ao período anterior disponível.</p>
+        {% endif %}
         <table class="data-table financial-table">
           <thead>
             <tr>
-              <th>BALANCO</th>
+              <th rowspan="2">BALANÇO</th>
               {% for period in matrix.periods %}
-                <th>{{ period.label }}</th>
+                <th colspan="2" class="dashboard-period">{{ period.label }}</th>
+              {% endfor %}
+            </tr>
+            <tr>
+              {% for period in matrix.periods %}
+                <th class="numeric">Valor</th>
+                <th class="dashboard-variation-heading">Variação</th>
               {% endfor %}
             </tr>
           </thead>
@@ -44,7 +53,7 @@
                 <tr class="financial-section-row">
                   <th>LIQUIDEZ</th>
                   {% for period in matrix.periods %}
-                    <th>{{ period.label }}</th>
+                    <th colspan="2">{{ period.label }}</th>
                   {% endfor %}
                 </tr>
               {% endif %}
@@ -55,11 +64,19 @@
                     {% with cell=row.values|dict_get:period.label %}
                       <td class="numeric">
                         {% if cell %}
-                          {% if row.line_type == "ratio" %}
-                            {{ cell.value|floatformat:1 }}
-                          {% else %}
-                            {{ cell.value|floatformat:0 }}
-                          {% endif %}
+                          {{ cell.display_value }}
+                        {% else %}
+                          <span class="subtle">-</span>
+                        {% endif %}
+                      </td>
+                      <td class="dashboard-variation-cell">
+                        {% if cell %}
+                          <span class="variation variation-{{ cell.variation.direction }}" style="color: {{ cell.variation.color }}">
+                            <span class="variation-label">{{ cell.variation.label }}</span>
+                            <span class="variation-track" aria-hidden="true">
+                              <span class="variation-bar" style="width: {{ cell.variation.bar_width }}%; background-color: {{ cell.variation.color }}"></span>
+                            </span>
+                          </span>
                         {% else %}
                           <span class="subtle">-</span>
                         {% endif %}

@@ -1,11 +1,9 @@
 from decimal import Decimal
 
 import pytest
-from django.test.utils import CaptureQueriesContext
-from django.urls import reverse
-
 from companies.models import Company, ReportingPeriod
-from standardization.models import StandardLineItem, StandardizedBalanceValue
+from django.urls import reverse
+from standardization.models import StandardizedBalanceValue, StandardLineItem
 
 
 @pytest.mark.django_db
@@ -31,7 +29,7 @@ def test_dashboard_query_count_stays_reasonable(client, user, django_assert_num_
             currency="BRL",
         )
 
-    with django_assert_num_queries(5):
+    with django_assert_num_queries(6):
         response = client.get(reverse("company-dashboard", args=[company.pk]))
 
     assert response.status_code == 200

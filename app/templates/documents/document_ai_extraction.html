@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Análise de balanço · {{ document.original_filename }}{% endblock %}
+
+{% block content %}
+  <section class="page">
+    <div class="page-header">
+      <div>
+        <h1>Análise estruturada do balanço</h1>
+        <p>{{ document.original_filename }} · gerada em {{ extraction.created_at|date:"Y-m-d H:i" }}</p>
+      </div>
+      <div class="actions">
+        <a class="button button-secondary" href="{% url 'document-detail' document.id %}">Back to document</a>
+      </div>
+    </div>
+    <section class="panel panel-stack">
+      <div class="section-title">
+        <div>
+          <h2>Resumo financeiro</h2>
+          <p class="muted">Valores organizados a partir da última extração estruturada pela IA.</p>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table financial-table">
+          <thead>
+            <tr>
+              <th>BALANÇO</th>
+              <th class="numeric">{{ analysis_period }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in analysis_rows %}
+              {% if row.type == "section" %}
+                <tr class="financial-section-row">
+                  <th colspan="2">{{ row.label }}</th>
+                </tr>
+              {% else %}
+                <tr{% if row.type == "highlight" %} class="financial-highlight"{% endif %}>
+                  <td>{{ row.label }}</td>
+                  <td class="numeric">{{ row.value }}</td>
+                </tr>
+              {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% if usage_summary %}
+      <section class="panel panel-stack">
+        <div class="section-title">
+          <div>
+            <h2>Consumo e custo estimado</h2>
+            <p class="muted">Estimativa baseada nas tarifas e cotação configuradas no ambiente.</p>
+          </div>
+        </div>
+        <div class="stats-grid usage-grid">
+          <div class="stat"><span class="stat-label">Modelo</span><span class="stat-value">{{ usage_summary.model }}</span></div>
+          <div class="stat"><span class="stat-label">Tokens de entrada</span><span class="stat-value">{{ usage_summary.input_tokens }}</span></div>
+          <div class="stat"><span class="stat-label">Tokens de saída</span><span class="stat-value">{{ usage_summary.output_tokens }}</span></div>
+          <div class="stat"><span class="stat-label">Tokens em cache</span><span class="stat-value">{{ usage_summary.cached_tokens }}</span></div>
+          <div class="stat"><span class="stat-label">Custo estimado (USD)</span><span class="stat-value">{{ usage_summary.estimated_usd }}</span></div>
+          <div class="stat"><span class="stat-label">Custo estimado (BRL)</span><span class="stat-value">{{ usage_summary.estimated_brl }}</span></div>
+        </div>
+      </section>
+    {% endif %}
+    <details class="panel panel-stack">
+      <summary>Ver JSON estruturado bruto</summary>
+      <div class="table-scroll">
+        <pre>{{ formatted_json }}</pre>
+      </div>
+    </details>
+  </section>
+{% endblock %}

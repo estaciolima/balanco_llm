@@ -1,11 +1,23 @@
-from pathlib import Path
 import os
+from decimal import Decimal, InvalidOperation
+from pathlib import Path
 
 import dj_database_url
-
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 PROJECT_DIR = BASE_DIR.parent
+
+
+def decimal_from_env(name: str) -> Decimal | None:
+    value = os.getenv(name, "").strip()
+    if not value:
+        return None
+    try:
+        return Decimal(value)
+    except InvalidOperation as exc:
+        raise ImproperlyConfigured(f"{name} must be a decimal number.") from exc
+
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
 DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
@@ -95,6 +107,16 @@ LOGOUT_REDIRECT_URL = "/login/"
 CELERY_BROKER_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_TASK_ALWAYS_EAGER = os.getenv("CELERY_TASK_ALWAYS_EAGER", "false").lower() == "true"
+OPENAI_BALANCE_EXTRACTION_ENABLED = (
+    os.getenv("OPENAI_BALANCE_EXTRACTION_ENABLED", "false").lower() == "true"
+)
+OPENAI_BALANCE_EXTRACTION_MODEL = os.getenv("OPENAI_BALANCE_EXTRACTION_MODEL", "gpt-5.4-mini")
+OPENAI_INPUT_USD_PER_MILLION_TOKENS = decimal_from_env("OPENAI_INPUT_USD_PER_MILLION_TOKENS")
+OPENAI_CACHED_INPUT_USD_PER_MILLION_TOKENS = decimal_from_env(
+    "OPENAI_CACHED_INPUT_USD_PER_MILLION_TOKENS"
+)
+OPENAI_OUTPUT_USD_PER_MILLION_TOKENS = decimal_from_env("OPENAI_OUTPUT_USD_PER_MILLION_TOKENS")
+USD_BRL_EXCHANGE_RATE = decimal_from_env("USD_BRL_EXCHANGE_RATE")
 AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG

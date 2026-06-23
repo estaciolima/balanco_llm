@@ -1,12 +1,13 @@
-from celery import shared_task
-from django.utils import timezone
 import logging
 
 from audit.services import record_audit_event
+from celery import shared_task
+from django.utils import timezone
 from documents.models import BalanceDocument
+
 from extraction.events import PipelineEvent
-from extraction.pipeline import process_document
 from extraction.models import ProcessingRun
+from extraction.pipeline import process_document
 
 logger = logging.getLogger(__name__)
 
@@ -51,16 +52,14 @@ def run_document_pipeline(processing_run_id: str) -> str:
     run.document.save(update_fields=["upload_status", "updated_at"])
     try:
         event_payloads = process_document(run.document, run)
-        for event_name in ("text_event", "tables_event", "candidates_event"):
-            payload = event_payloads.get(event_name)
-            if payload:
-                record_audit_event(
-                    event_type=payload["event_type"],
-                    target_type="ProcessingRun",
-                    target_id=str(run.pk),
-                    actor_user=run.document.uploaded_by,
-                    after=payload,
-                )
+        for payload in event_payloads.values():
+            record_audit_event(
+                event_type=payload["event_type"],
+                target_type="ProcessingRun",
+                target_id=str(run.pk),
+                actor_user=run.document.uploaded_by,
+                after=payload,
+            )
         run.status = ProcessingRun.Status.SUCCEEDED
         run.finished_at = timezone.now()
         run.save(update_fields=["status", "finished_at"])

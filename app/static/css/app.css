@@ -304,6 +304,10 @@ input[type="submit"]:hover {
   gap: 14px;
 }
 
+.usage-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .stat {
   padding: 16px;
   border: 1px solid var(--border);
@@ -530,6 +534,10 @@ textarea:focus {
   border: 1px solid var(--border);
 }
 
+.table-scroll .financial-table {
+  min-width: 0;
+}
+
 .financial-table thead th,
 .financial-section-row th {
   background: #162b63;
@@ -537,9 +545,79 @@ textarea:focus {
   font-size: 0.95rem;
 }
 
+details summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+details pre {
+  margin: 0;
+  padding: 16px;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 0.82rem;
+  white-space: pre;
+}
+
 .financial-table th:first-child,
 .financial-table td:first-child {
   width: 46%;
+}
+
+.financial-table .dashboard-period {
+  text-align: center;
+}
+
+.financial-table .dashboard-variation-heading,
+.financial-table .dashboard-variation-cell {
+  min-width: 140px;
+}
+
+.dashboard-variation-cell {
+  padding: 9px 12px !important;
+}
+
+.variation {
+  display: grid;
+  gap: 5px;
+  min-width: 118px;
+}
+
+.variation-label {
+  color: inherit !important;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.variation-track {
+  display: block;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dce4ef;
+}
+
+.variation-bar {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: currentColor;
+}
+
+.variation-positive .variation-label {
+  color: #198754 !important;
+}
+
+.variation-positive .variation-bar {
+  background: #198754 !important;
+}
+
+.variation-negative .variation-label {
+  color: #c43d3d !important;
+}
+
+.variation-negative .variation-bar {
+  background: #c43d3d !important;
 }
 
 .financial-table .numeric {
@@ -600,6 +678,7 @@ textarea:focus {
 @media (max-width: 900px) {
   .split-layout,
   .stats-grid,
+  .usage-grid,
   .meta-grid {
     grid-template-columns: 1fr;
   }

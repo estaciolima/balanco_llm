@@ -1,8 +1,10 @@
+from django.conf import settings
 from django.db import transaction
 
 from extraction.events import PipelineEvent
-from extraction.models import ExtractedLineItem, RawExtraction
+from extraction.models import AIExtractionRun, ExtractedLineItem, RawExtraction
 from extraction.ocr import run_ocr_fallback
+from extraction.openai_balance import extract_balance_data
 from extraction.parsers import parse_candidate_lines
 from extraction.pdf_text import detect_has_text, extract_native_text
 from extraction.tables import extract_tables
@@ -36,6 +38,49 @@ def process_document(document, processing_run):
         for row in text_rows
     ]
     RawExtraction.objects.bulk_create(raw_text_extractions)
+
+    llm_event = None
+    if settings.OPENAI_BALANCE_EXTRACTION_ENABLED:
+        llm_run = AIExtractionRun.objects.create(
+            document=document,
+            provider="openai",
+            model_name=settings.OPENAI_BALANCE_EXTRACTION_MODEL,
+            prompt_version="2026.06.23",
+            parameters={"source_method": source_method, "page_count": len(text_rows)},
+            status="running",
+        )
+        try:
+            joined_text = "\n\n".join(
+                f"[PÁGINA {row['page_number']}]\n{row['text']}" for row in text_rows
+            )
+            llm_data, llm_metadata = extract_balance_data(joined_text)
+            llm_run.model_name = llm_metadata["model"]
+            llm_run.output_hash = llm_metadata["output_hash"]
+            llm_run.token_usage = llm_metadata["token_usage"]
+            llm_run.status = "succeeded"
+            llm_run.save(update_fields=["model_name", "output_hash", "token_usage", "status"])
+            RawExtraction.objects.create(
+                processing_run=processing_run,
+                document=document,
+                extraction_type=RawExtraction.ExtractionType.METADATA,
+                content={"llm_output": llm_data, "llm_metadata": llm_metadata},
+                source_method="openai_structured_output",
+            )
+            llm_event = PipelineEvent(
+                event_type="document.llm.extracted",
+                document_id=str(document.pk),
+                processing_run_id=str(processing_run.pk),
+                pipeline_version=processing_run.pipeline_version,
+                payload={
+                    "provider": "openai",
+                    "model": llm_metadata["model"],
+                    "status": "succeeded",
+                },
+            ).as_dict()
+        except Exception:
+            llm_run.status = "failed"
+            llm_run.save(update_fields=["status"])
+            raise
 
     table_rows = extract_tables(pdf_path)
     for table in table_rows:
@@ -71,7 +116,7 @@ def process_document(document, processing_run):
             )
             created_items.append(extracted)
 
-    return {
+    events = {
         "text_event": PipelineEvent(
             event_type="document.text.extracted",
             document_id=str(document.pk),
@@ -106,3 +151,6 @@ def process_document(document, processing_run):
             },
         ).as_dict(),
     }
+    if llm_event:
+        events["llm_event"] = llm_event
+    return events
