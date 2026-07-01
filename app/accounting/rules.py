@@ -4,9 +4,40 @@ from copy import deepcopy
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Any
+from unicodedata import normalize
 
 SUM_ACCOUNTS_RULE_ID = "SUM_ACCOUNTS_001"
 BALANCE_EQUATION_RULE_ID = "BALANCE_EQUATION_001"
+EXPECTED_GROUPS_BY_FIELD = {
+    "realizavel_longo_prazo": ("ativo nao circulante", "realizavel longo prazo"),
+    "contas_receber_clientes_longo_prazo": (
+        "ativo nao circulante",
+        "realizavel longo prazo",
+    ),
+    "estoques_longo_prazo": ("ativo nao circulante", "realizavel longo prazo"),
+    "contas_receber_empresas_ligadas_socios": (
+        "ativo nao circulante",
+        "realizavel longo prazo",
+    ),
+    "impostos_recuperar_diferidos_ativo": (
+        "ativo nao circulante",
+        "realizavel longo prazo",
+    ),
+    "ativo_circulante": ("ativo circulante",),
+    "caixa_aplicacoes": ("ativo circulante", "disponivel"),
+    "contas_receber_curto_prazo": ("ativo circulante",),
+    "estoques": ("ativo circulante",),
+    "exigivel_longo_prazo": ("passivo nao circulante", "exigivel longo prazo"),
+    "bancos_longo_prazo": ("passivo nao circulante", "exigivel longo prazo"),
+    "impostos_parcelados_diferidos_longo_prazo": (
+        "passivo nao circulante",
+        "exigivel longo prazo",
+    ),
+    "passivo_circulante": ("passivo circulante",),
+    "bancos_curto_prazo": ("passivo circulante",),
+    "fornecedores": ("passivo circulante",),
+    "salarios_impostos": ("passivo circulante",),
+}
 SUPPORTED_BALANCE_DOCUMENT_TYPES = {"balanco_patrimonial", "balanço_patrimonial"}
 
 
@@ -64,6 +95,39 @@ def _serialize_accounts(accounts: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return serialized
 
 
+def _normalize_group(value: Any) -> str:
+    if value is None:
+        return ""
+    ascii_value = normalize("NFKD", str(value)).encode("ascii", "ignore").decode("ascii")
+    return ascii_value.lower().replace("-", " ").replace("_", " ")
+
+
+def _account_matches_expected_group(
+    account: dict[str, Any], expected_groups: tuple[str, ...]
+) -> bool:
+    group = _normalize_group(account.get("grupo_original"))
+    return any(expected_group in group for expected_group in expected_groups)
+
+
+def _filter_accounts_by_expected_group(
+    field_name: str, accounts: list[dict[str, Any]]
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], tuple[str, ...]]:
+    expected_groups = EXPECTED_GROUPS_BY_FIELD.get(field_name, ())
+    if not expected_groups:
+        return accounts, [], expected_groups
+    if not any(_normalize_group(account.get("grupo_original")) for account in accounts):
+        return accounts, [], expected_groups
+    included = [
+        account for account in accounts if _account_matches_expected_group(account, expected_groups)
+    ]
+    excluded = [
+        account
+        for account in accounts
+        if not _account_matches_expected_group(account, expected_groups)
+    ]
+    return included, excluded, expected_groups
+
+
 def apply_sum_account_corrections(
     llm_output: dict[str, Any], tolerance_amount: Decimal
 ) -> tuple[dict[str, Any], list[RuleFinding]]:
@@ -94,7 +158,31 @@ def apply_sum_account_corrections(
             )
             continue
 
-        account_values = [decimal_or_none(account.get("valor")) for account in accounts]
+        included_accounts, excluded_accounts, expected_groups = _filter_accounts_by_expected_group(
+            field_name, accounts
+        )
+        if expected_groups and not included_accounts:
+            findings.append(
+                RuleFinding(
+                    rule_id=SUM_ACCOUNTS_RULE_ID,
+                    field_path=field_path,
+                    severity="warning",
+                    outcome="not_assessable",
+                    message=(
+                        "Não foi possível recalcular a soma: nenhuma conta de origem "
+                        "está no grupo contábil esperado para este campo."
+                    ),
+                    original_value=original_value,
+                    inputs={
+                        "tipo_obtencao": item.get("tipo_obtencao"),
+                        "grupos_esperados": list(expected_groups),
+                        "contas_origem": _serialize_accounts(accounts),
+                    },
+                )
+            )
+            continue
+
+        account_values = [decimal_or_none(account.get("valor")) for account in included_accounts]
         if any(value is None for value in account_values) or original_value is None:
             findings.append(
                 RuleFinding(
@@ -106,7 +194,9 @@ def apply_sum_account_corrections(
                     original_value=original_value,
                     inputs={
                         "tipo_obtencao": item.get("tipo_obtencao"),
-                        "contas_origem": _serialize_accounts(accounts),
+                        "grupos_esperados": list(expected_groups),
+                        "contas_origem": _serialize_accounts(included_accounts),
+                        "contas_origem_excluidas": _serialize_accounts(excluded_accounts),
                     },
                 )
             )
@@ -116,7 +206,9 @@ def apply_sum_account_corrections(
         difference = calculated_value - original_value
         inputs = {
             "tipo_obtencao": item.get("tipo_obtencao"),
-            "contas_origem": _serialize_accounts(accounts),
+            "grupos_esperados": list(expected_groups),
+            "contas_origem": _serialize_accounts(included_accounts),
+            "contas_origem_excluidas": _serialize_accounts(excluded_accounts),
         }
         if abs(difference) <= tolerance_amount:
             item["valor_validado"] = decimal_to_json(original_value)

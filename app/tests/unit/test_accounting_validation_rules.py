@@ -162,3 +162,63 @@ def test_sum_accounts_respects_tolerance():
     )
 
     assert findings[0].outcome == "passed"
+
+
+def test_sum_accounts_filters_accounts_outside_expected_group():
+    validated, findings = apply_sum_account_corrections(
+        _output(
+            {
+                "contas_receber_empresas_ligadas_socios": {
+                    "valor": 150,
+                    "tipo_obtencao": "soma_contas",
+                    "contas_origem": [
+                        {
+                            "descricao": "Sócios LP",
+                            "valor": 100,
+                            "grupo_original": "Ativo Não Circulante",
+                        },
+                        {
+                            "descricao": "Sócios CP",
+                            "valor": 50,
+                            "grupo_original": "Ativo Circulante",
+                        },
+                    ],
+                }
+            }
+        ),
+        Decimal("0.01"),
+    )
+
+    item = validated["campos_analise"]["contas_receber_empresas_ligadas_socios"]
+    assert item["valor_original"] == "150"
+    assert item["valor_validado"] == "100"
+    assert findings[0].outcome == "corrected"
+    assert findings[0].inputs["contas_origem"][0]["descricao"] == "Sócios LP"
+    assert findings[0].inputs["contas_origem_excluidas"][0]["descricao"] == "Sócios CP"
+
+
+def test_sum_accounts_is_not_assessable_when_no_account_matches_expected_group():
+    _, findings = apply_sum_account_corrections(
+        _output(
+            {
+                "contas_receber_empresas_ligadas_socios": {
+                    "valor": 50,
+                    "tipo_obtencao": "soma_contas",
+                    "contas_origem": [
+                        {
+                            "descricao": "Sócios CP",
+                            "valor": 50,
+                            "grupo_original": "Ativo Circulante",
+                        },
+                    ],
+                }
+            }
+        ),
+        Decimal("0.01"),
+    )
+
+    assert findings[0].outcome == "not_assessable"
+    assert findings[0].inputs["grupos_esperados"] == [
+        "ativo nao circulante",
+        "realizavel longo prazo",
+    ]

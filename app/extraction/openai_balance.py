@@ -312,7 +312,7 @@ Use empréstimos, financiamentos, bancos ou instrumentos similares classificados
 Use contas tributárias de longo prazo no passivo, como Parcelamento de Tributos, Obrigações Tributárias, Impostos Diferidos, Provisões Fiscais/Trabalhistas/Cíveis, tributos a recolher ou equivalentes classificados no Passivo Não Circulante. Não misture com impostos a recuperar do ativo.
 
 6. realizavel_longo_prazo:
-Use o Ativo Não Circulante realizável a longo prazo, quando estiver separado do Permanente. Se o documento usar apenas Ativo Não Circulante agregando Permanente e Realizável LP, identifique a ambiguidade.
+Use o Ativo Não Circulante ou Realizável a Longo Prazo.
 
 7. contas_receber_clientes_longo_prazo:
 Use Contas a Receber de Clientes classificadas no Ativo Não Circulante ou Realizável a Longo Prazo.
@@ -321,7 +321,7 @@ Use Contas a Receber de Clientes classificadas no Ativo Não Circulante ou Reali
 Use Estoques classificados no longo prazo, se existirem.
 
 9. contas_receber_empresas_ligadas_socios:
-Use Partes Relacionadas, Empresas Ligadas, Sócios, Acionistas ou contas semelhantes no Ativo Não Circulante ou Realizável a Longo Prazo.
+Use Partes Relacionadas, Empresas Ligadas, Sócios, Acionistas ou contas semelhantes dentro de Ativo Não Circulante ou Realizável a Longo Prazo.
 
 10. impostos_recuperar_diferidos_ativo:
 Use tributos a recuperar, impostos a recuperar, impostos diferidos, créditos fiscais ou valores restituíveis classificados no Ativo Não Circulante ou Realizável a Longo Prazo. **NÃO inclua impostos no ATIVO CIRCULANTE** .
