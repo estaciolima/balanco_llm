@@ -1,5 +1,6 @@
 from decimal import Decimal, InvalidOperation
 
+from accounting.models import AccountingValidationRun
 from extraction.models import RawExtraction
 from standardization.models import StandardizedBalanceValue
 
@@ -78,6 +79,28 @@ def _add_display_and_variation(rows: list[dict], periods: list[dict]) -> None:
             previous_value = cell["value"]
 
 
+def _validated_outputs_by_extraction(extractions) -> dict:
+    extraction_ids = [extraction.pk for extraction in extractions]
+    validation_runs = (
+        AccountingValidationRun.objects.filter(raw_extraction_id__in=extraction_ids)
+        .order_by("raw_extraction_id", "-created_at")
+        .values("raw_extraction_id", "validated_output")
+    )
+    outputs = {}
+    for validation_run in validation_runs:
+        outputs.setdefault(validation_run["raw_extraction_id"], validation_run["validated_output"])
+    return outputs
+
+
+def _analysis_output_for(extraction: RawExtraction, validated_outputs: dict) -> dict:
+    validated_output = validated_outputs.get(extraction.pk)
+    if isinstance(validated_output, dict):
+        return validated_output
+    content = extraction.content or {}
+    result = content.get("llm_output", {}) if isinstance(content, dict) else {}
+    return result if isinstance(result, dict) else {}
+
+
 def get_company_ai_dashboard_matrix(*, company, start_year=None, end_year=None, currency=""):
     extractions = (
         RawExtraction.objects.select_related("document__reporting_period")
@@ -99,6 +122,7 @@ def get_company_ai_dashboard_matrix(*, company, start_year=None, end_year=None, 
     latest_by_year = {}
     for extraction in extractions:
         latest_by_year.setdefault(extraction.document.reporting_period.fiscal_year, extraction)
+    validated_outputs = _validated_outputs_by_extraction(latest_by_year.values())
     periods = [{"label": str(year), "fiscal_year": year} for year in sorted(latest_by_year)]
     rows = []
     flat_rows = []
@@ -118,10 +142,14 @@ def get_company_ai_dashboard_matrix(*, company, start_year=None, end_year=None, 
         }
         for period in periods:
             extraction = latest_by_year[period["fiscal_year"]]
-            result = extraction.content.get("llm_output", {})
+            result = _analysis_output_for(extraction, validated_outputs)
             fields = result.get("campos_analise", {}) if isinstance(result, dict) else {}
             item = fields.get(field_name, {}) if isinstance(fields, dict) else {}
-            value = item.get("valor") if isinstance(item, dict) else None
+            value = (
+                item.get("valor_validado", item.get("valor"))
+                if isinstance(item, dict)
+                else None
+            )
             if value is None:
                 continue
             try:

@@ -1,3 +1,4 @@
+from accounting.services import validate_structured_balance
 from django.conf import settings
 from django.db import transaction
 
@@ -59,13 +60,14 @@ def process_document(document, processing_run):
             llm_run.token_usage = llm_metadata["token_usage"]
             llm_run.status = "succeeded"
             llm_run.save(update_fields=["model_name", "output_hash", "token_usage", "status"])
-            RawExtraction.objects.create(
+            structured_extraction = RawExtraction.objects.create(
                 processing_run=processing_run,
                 document=document,
                 extraction_type=RawExtraction.ExtractionType.METADATA,
                 content={"llm_output": llm_data, "llm_metadata": llm_metadata},
                 source_method="openai_structured_output",
             )
+            validation_run = validate_structured_balance(structured_extraction)
             llm_event = PipelineEvent(
                 event_type="document.llm.extracted",
                 document_id=str(document.pk),
@@ -75,6 +77,17 @@ def process_document(document, processing_run):
                     "provider": "openai",
                     "model": llm_metadata["model"],
                     "status": "succeeded",
+                },
+            ).as_dict()
+            validation_event = PipelineEvent(
+                event_type="document.accounting.validated",
+                document_id=str(document.pk),
+                processing_run_id=str(processing_run.pk),
+                pipeline_version=processing_run.pipeline_version,
+                payload={
+                    "validation_run_id": str(validation_run.pk),
+                    "status": validation_run.status,
+                    "summary": validation_run.summary,
                 },
             ).as_dict()
         except Exception:
@@ -153,4 +166,6 @@ def process_document(document, processing_run):
     }
     if llm_event:
         events["llm_event"] = llm_event
+    if "validation_event" in locals():
+        events["validation_event"] = validation_event
     return events

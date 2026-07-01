@@ -37,13 +37,103 @@
               {% else %}
                 <tr{% if row.type == "highlight" %} class="financial-highlight"{% endif %}>
                   <td>{{ row.label }}</td>
-                  <td class="numeric">{{ row.value }}</td>
+                  <td class="numeric{% if row.corrected %} corrected-value{% endif %}">
+                    {{ row.value }}
+                    {% if row.corrected %}
+                      <span class="correction-note">corrigido de {{ row.original_value }}</span>
+                    {% endif %}
+                  </td>
                 </tr>
               {% endif %}
             {% endfor %}
           </tbody>
         </table>
       </div>
+    </section>
+    <section class="panel panel-stack">
+      <div class="section-title">
+        <div>
+          <h2>Validação contábil automatizada</h2>
+          <p class="muted">Checagem determinística feita sobre o JSON estruturado da IA.</p>
+        </div>
+        <div class="actions">
+          {% if validation_summary %}
+            <span class="badge {{ validation_summary.badge_class }}">{{ validation_summary.status_label }}</span>
+          {% endif %}
+          <form class="inline-action-form" method="post" action="{% url 'document-validate-accounting' document.id %}">
+            {% csrf_token %}
+            <button type="submit">Executar validação contábil</button>
+          </form>
+        </div>
+      </div>
+      {% if validation_summary %}
+        <div class="stats-grid validation-grid">
+          <div class="stat"><span class="stat-label">Achados corrigidos</span><span class="stat-value">{{ validation_summary.summary.by_outcome.corrected|default:0 }}</span></div>
+          <div class="stat"><span class="stat-label">Falhas</span><span class="stat-value">{{ validation_summary.summary.by_outcome.failed|default:0 }}</span></div>
+          <div class="stat"><span class="stat-label">Não avaliáveis</span><span class="stat-value">{{ validation_summary.summary.by_outcome.not_assessable|default:0 }}</span></div>
+        </div>
+        {% if validation_summary.corrections %}
+          <div>
+            <h3>Correções aplicadas</h3>
+            <div class="table-scroll">
+              <table class="data-table validation-table">
+                <thead>
+                  <tr>
+                    <th>Campo</th>
+                    <th>Regra</th>
+                    <th class="numeric">Original</th>
+                    <th class="numeric">Corrigido</th>
+                    <th class="numeric">Diferença</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for correction in validation_summary.corrections %}
+                    <tr>
+                      <td>{{ correction.field_path }}</td>
+                      <td>{{ correction.rule_id }}</td>
+                      <td class="numeric">{{ correction.original_value }}</td>
+                      <td class="numeric">{{ correction.corrected_value }}</td>
+                      <td class="numeric">{{ correction.difference }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        {% endif %}
+        <div>
+          <h3>Achados da validação</h3>
+          <div class="table-scroll">
+            <table class="data-table validation-table">
+              <thead>
+                <tr>
+                  <th>Regra</th>
+                  <th>Resultado</th>
+                  <th>Severidade</th>
+                  <th>Campo</th>
+                  <th>Explicação</th>
+                  <th class="numeric">Diferença</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for finding in validation_summary.findings %}
+                  <tr>
+                    <td>{{ finding.rule_id }}</td>
+                    <td>{{ finding.outcome }}</td>
+                    <td>{{ finding.severity }}</td>
+                    <td>{{ finding.field_path }}</td>
+                    <td>{{ finding.message }}</td>
+                    <td class="numeric">{{ finding.difference }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <a class="button button-secondary" href="{% url 'audit-event-list' %}?target_type=BalanceDocument&target_id={{ document.id }}&event_type=accounting.validation">Ver eventos no Audit</a>
+      {% else %}
+        <div class="empty-state">A validação contábil ainda não foi executada para esta extração.</div>
+      {% endif %}
     </section>
     {% if usage_summary %}
       <section class="panel panel-stack">

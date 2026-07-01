@@ -484,6 +484,10 @@ textarea:focus {
   flex-wrap: wrap;
 }
 
+.inline-action-form {
+  display: inline-flex;
+}
+
 .inline-form input[type="search"] {
   min-width: min(320px, 100%);
 }
@@ -632,6 +636,27 @@ details pre {
   color: #253044;
   border-top: 1px solid #9ea7b4;
   border-bottom: 1px solid #9ea7b4;
+}
+
+.corrected-value {
+  color: var(--warning-text);
+  font-weight: 800;
+}
+
+.correction-note {
+  display: block;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.validation-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.validation-table td,
+.validation-table th {
+  font-size: 0.88rem;
 }
 
 .financial-level-1 td:first-child {

@@ -1,10 +1,13 @@
 import json
 from decimal import Decimal, InvalidOperation
 
+from accounting.models import AccountingValidationRun
+from accounting.services import validate_structured_balance
 from companies.models import Company
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from extraction.models import AIExtractionRun, RawExtraction
 
@@ -63,23 +66,89 @@ def format_analysis_value(value, *, is_ratio: bool = False) -> str:
     return integer if fraction == "00" else f"{integer},{fraction}"
 
 
-def build_analysis_table(result: dict) -> list[dict[str, str]]:
+def build_analysis_table(result: dict) -> list[dict[str, str | bool]]:
     fields = result.get("campos_analise", {})
     rows = []
     for row_type, label, field_name in ANALYSIS_TABLE_ROWS:
         if row_type == "section":
-            rows.append({"type": row_type, "label": label, "value": ""})
+            rows.append({"type": row_type, "label": label, "value": "", "corrected": False})
             continue
         item = fields.get(field_name, {})
-        value = item.get("valor") if isinstance(item, dict) else None
+        value = item.get("valor_validado", item.get("valor")) if isinstance(item, dict) else None
         rows.append(
             {
                 "type": row_type,
                 "label": label,
                 "value": format_analysis_value(value, is_ratio=field_name.startswith("liquidez_")),
+                "corrected": bool(item.get("corrigido")) if isinstance(item, dict) else False,
+                "original_value": (
+                    format_analysis_value(item.get("valor")) if isinstance(item, dict) else "-"
+                ),
             }
         )
     return rows
+
+
+def _format_decimal_value(value) -> str:
+    return format_analysis_value(value)
+
+
+def _validation_badge_class(status: str) -> str:
+    return {
+        AccountingValidationRun.Status.CONSISTENT: "badge-success",
+        AccountingValidationRun.Status.WARNING: "badge-warning",
+        AccountingValidationRun.Status.INCONSISTENT: "badge-danger",
+        AccountingValidationRun.Status.NOT_ASSESSABLE: "badge-warning",
+    }.get(status, "")
+
+
+def _validation_status_label(status: str) -> str:
+    return {
+        AccountingValidationRun.Status.CONSISTENT: "Coerente",
+        AccountingValidationRun.Status.WARNING: "Com alertas",
+        AccountingValidationRun.Status.INCONSISTENT: "Inconsistente",
+        AccountingValidationRun.Status.NOT_ASSESSABLE: "Não avaliável",
+    }.get(status, status)
+
+
+def build_validation_summary(validation_run: AccountingValidationRun | None) -> dict | None:
+    if validation_run is None:
+        return None
+    findings = list(validation_run.findings.all())
+    return {
+        "id": validation_run.id,
+        "status": validation_run.status,
+        "status_label": _validation_status_label(validation_run.status),
+        "badge_class": _validation_badge_class(validation_run.status),
+        "summary": validation_run.summary,
+        "created_at": validation_run.created_at,
+        "duration_ms": validation_run.duration_ms,
+        "findings": [
+            {
+                "rule_id": finding.rule_id,
+                "field_path": finding.field_path,
+                "severity": finding.severity,
+                "outcome": finding.outcome,
+                "message": finding.message,
+                "original_value": _format_decimal_value(finding.original_value),
+                "calculated_value": _format_decimal_value(finding.calculated_value),
+                "difference": _format_decimal_value(finding.difference),
+            }
+            for finding in findings
+        ],
+        "corrections": [
+            {
+                "rule_id": finding.rule_id,
+                "field_path": finding.field_path,
+                "message": finding.message,
+                "original_value": _format_decimal_value(finding.original_value),
+                "corrected_value": _format_decimal_value(finding.calculated_value),
+                "difference": _format_decimal_value(finding.difference),
+            }
+            for finding in findings
+            if finding.outcome == "corrected"
+        ],
+    }
 
 
 def _token_count(value) -> int:
@@ -180,7 +249,7 @@ def document_detail(request, document_id):
             extraction_type=RawExtraction.ExtractionType.METADATA,
             source_method="openai_structured_output",
         )
-        .order_by("-created_at")
+        .order_by("-created_at", "-processing_run__created_at")
         .first()
     )
     return render(
@@ -203,29 +272,64 @@ def document_reprocess(request, document_id):
     return redirect("document-detail", document_id=document.pk)
 
 
-@login_required
-def document_ai_extraction(request, document_id):
-    document = get_object_or_404(BalanceDocument.objects.select_related("company"), pk=document_id)
-    extraction = get_object_or_404(
+def _latest_structured_extraction(document: BalanceDocument) -> RawExtraction | None:
+    return (
         document.raw_extractions.filter(
             extraction_type=RawExtraction.ExtractionType.METADATA,
             source_method="openai_structured_output",
-        ).order_by("-created_at")
+        )
+        .order_by("-created_at", "-processing_run__created_at")
+        .first()
     )
+
+
+@login_required
+def document_ai_extraction(request, document_id):
+    document = get_object_or_404(BalanceDocument.objects.select_related("company"), pk=document_id)
+    extraction = _latest_structured_extraction(document)
+    if extraction is None:
+        raise Http404("No structured AI extraction found for this document.")
     result = extraction.content.get("llm_output", {})
     metadata = result.get("metadados", {}) if isinstance(result, dict) else {}
     ai_run = document.ai_extraction_runs.order_by("-created_at").first()
+    validation_run = (
+        extraction.accounting_validation_runs.prefetch_related("findings")
+        .order_by("-created_at")
+        .first()
+    )
+    validated_result = validation_run.validated_output if validation_run else result
     return render(
         request,
         "documents/document_ai_extraction.html",
         {
             "document": document,
             "extraction": extraction,
-            "analysis_rows": build_analysis_table(result),
+            "analysis_rows": build_analysis_table(validated_result),
             "analysis_period": metadata.get("periodo_original")
             or metadata.get("ano_referencia")
             or "-",
+            "validation_summary": build_validation_summary(validation_run),
             "usage_summary": build_usage_summary(ai_run),
             "formatted_json": json.dumps(result, ensure_ascii=False, indent=2),
         },
     )
+
+
+@login_required
+def document_validate_accounting(request, document_id):
+    document = get_object_or_404(BalanceDocument.objects.select_related("company"), pk=document_id)
+    if request.method != "POST":
+        return redirect("document-ai-extraction", document_id=document.pk)
+
+    extraction = _latest_structured_extraction(document)
+    if extraction is None:
+        messages.error(request, "Nenhuma extração estruturada da IA foi encontrada para validar.")
+        return redirect("document-detail", document_id=document.pk)
+
+    validation_run = validate_structured_balance(extraction, actor_user=request.user)
+    status_label = _validation_status_label(validation_run.status)
+    messages.success(
+        request,
+        f"Validação contábil executada com status: {status_label}.",
+    )
+    return redirect("document-ai-extraction", document_id=document.pk)

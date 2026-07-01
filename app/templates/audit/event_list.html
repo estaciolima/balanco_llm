@@ -17,7 +17,16 @@
             <li class="list-row">
               <div>
                 <strong>{{ event.event_type }}</strong>
-                <p>{{ event.target_type }} · {{ event.created_at|date:"Y-m-d H:i:s" }}</p>
+                <p>{{ event.target_type }} {{ event.target_id }} · {{ event.created_at|date:"Y-m-d H:i:s" }}</p>
+                {% if event.reason %}
+                  <p>{{ event.reason }}</p>
+                {% endif %}
+                {% if event.after.rule_id %}
+                  <p>Regra {{ event.after.rule_id }} · {{ event.after.field_path }}</p>
+                  {% if event.after.original_value or event.after.corrected_value %}
+                    <p>Original: {{ event.after.original_value }} · Corrigido: {{ event.after.corrected_value }}</p>
+                  {% endif %}
+                {% endif %}
               </div>
             </li>
           {% endfor %}

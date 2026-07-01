@@ -13,4 +13,6 @@ def audit_event_list(request):
         events = events.filter(event_type__icontains=event_type)
     if target_type := request.GET.get("target_type"):
         events = events.filter(target_type__icontains=target_type)
+    if target_id := request.GET.get("target_id"):
+        events = events.filter(target_id=str(target_id))
     return render(request, "audit/event_list.html", {"events": events})

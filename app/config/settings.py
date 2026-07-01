@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "companies",
     "documents",
     "extraction",
+    "accounting",
     "standardization",
     "review",
     "dashboard",
@@ -117,6 +118,12 @@ OPENAI_CACHED_INPUT_USD_PER_MILLION_TOKENS = decimal_from_env(
 )
 OPENAI_OUTPUT_USD_PER_MILLION_TOKENS = decimal_from_env("OPENAI_OUTPUT_USD_PER_MILLION_TOKENS")
 USD_BRL_EXCHANGE_RATE = decimal_from_env("USD_BRL_EXCHANGE_RATE")
+ACCOUNTING_VALIDATION_AMOUNT_TOLERANCE = (
+    decimal_from_env("ACCOUNTING_VALIDATION_AMOUNT_TOLERANCE") or Decimal("0.01")
+)
+ACCOUNTING_VALIDATION_RATIO_TOLERANCE = (
+    decimal_from_env("ACCOUNTING_VALIDATION_RATIO_TOLERANCE") or Decimal("0.01")
+)
 AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG

@@ -9,6 +9,11 @@ urlpatterns = [
         views.document_ai_extraction,
         name="document-ai-extraction",
     ),
+    path(
+        "<uuid:document_id>/ai-extraction/validate-accounting/",
+        views.document_validate_accounting,
+        name="document-validate-accounting",
+    ),
     path("<uuid:document_id>/reprocess/", views.document_reprocess, name="document-reprocess"),
     path("company/<uuid:company_id>/upload/", views.document_upload, name="document-upload"),
 ]
