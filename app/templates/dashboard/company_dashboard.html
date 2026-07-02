@@ -62,9 +62,12 @@
                   <td>{{ row.label }}</td>
                   {% for period in matrix.periods %}
                     {% with cell=row.values|dict_get:period.label %}
-                      <td class="numeric">
+                      <td class="numeric"{% if cell.origin_tooltip %} title="{{ cell.origin_tooltip }}"{% endif %}>
                         {% if cell %}
                           {{ cell.display_value }}
+                          {% if cell.origin_tooltip %}
+                            <span class="sum-tooltip" tabindex="0" aria-label="Contas somadas" title="{{ cell.origin_tooltip }}" data-tooltip="{{ cell.origin_tooltip }}">Σ</span>
+                          {% endif %}
                         {% else %}
                           <span class="subtle">-</span>
                         {% endif %}

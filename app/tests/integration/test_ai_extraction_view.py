@@ -201,7 +201,18 @@ def test_ai_extraction_view_displays_accounting_corrections(client, user, settin
                     "passivo_circulante": {
                         "valor": 690,
                         "tipo_obtencao": "soma_contas",
-                        "contas_origem": [{"descricao": "Banco", "valor": 700}],
+                        "contas_origem": [
+                            {
+                                "descricao": "Banco A",
+                                "valor": 400,
+                                "grupo_original": "Passivo Circulante",
+                            },
+                            {
+                                "descricao": "Banco B",
+                                "valor": 300,
+                                "grupo_original": "Passivo Circulante",
+                            },
+                        ],
                     },
                     "exigivel_longo_prazo": {"valor": 0},
                     "patrimonio_liquido": {"valor": 300},
@@ -220,6 +231,9 @@ def test_ai_extraction_view_displays_accounting_corrections(client, user, settin
     assert "SUM_ACCOUNTS_001" in content
     assert "corrigido de 690" in content
     assert "700" in content
+    assert "data-tooltip" in content
+    assert "Banco A" in content
+    assert "Banco B" in content
 
 
 @pytest.mark.django_db

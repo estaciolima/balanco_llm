@@ -45,6 +45,20 @@ def format_dashboard_value(value, *, is_ratio: bool) -> str:
     return integer if fraction == "00" else f"{integer},{fraction}"
 
 
+def _origin_accounts_tooltip(item: dict) -> str:
+    accounts = item.get("contas_origem_somadas") or item.get("contas_origem") or []
+    if not isinstance(accounts, list) or len(accounts) <= 1:
+        return ""
+    lines = []
+    for account in accounts:
+        description = account.get("descricao") or account.get("codigo") or "Conta"
+        value = format_dashboard_value(account.get("valor"), is_ratio=False)
+        group = account.get("grupo_original")
+        group_suffix = f" · {group}" if group else ""
+        lines.append(f"{description}: {value}{group_suffix}")
+    return "\n".join(lines)
+
+
 def build_variation(current_value, previous_value) -> dict:
     if previous_value is None or previous_value == 0:
         return {"label": "-", "direction": "neutral", "bar_width": 0, "color": "#6c757d"}
@@ -160,6 +174,7 @@ def get_company_ai_dashboard_matrix(*, company, start_year=None, end_year=None, 
                 "value": decimal_value,
                 "currency": result.get("metadados", {}).get("moeda", ""),
                 "document_id": str(extraction.document_id),
+                "origin_tooltip": _origin_accounts_tooltip(item) if isinstance(item, dict) else "",
             }
             flat_rows.append(
                 {

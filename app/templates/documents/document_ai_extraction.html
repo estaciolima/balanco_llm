@@ -37,8 +37,11 @@
               {% else %}
                 <tr{% if row.type == "highlight" %} class="financial-highlight"{% endif %}>
                   <td>{{ row.label }}</td>
-                  <td class="numeric{% if row.corrected %} corrected-value{% endif %}">
+                  <td class="numeric{% if row.corrected %} corrected-value{% endif %}"{% if row.origin_tooltip %} title="{{ row.origin_tooltip }}"{% endif %}>
                     {{ row.value }}
+                    {% if row.origin_tooltip %}
+                      <span class="sum-tooltip" tabindex="0" aria-label="Contas somadas" title="{{ row.origin_tooltip }}" data-tooltip="{{ row.origin_tooltip }}">Σ</span>
+                    {% endif %}
                     {% if row.corrected %}
                       <span class="correction-note">corrigido de {{ row.original_value }}</span>
                     {% endif %}

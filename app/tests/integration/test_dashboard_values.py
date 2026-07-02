@@ -124,7 +124,18 @@ def test_dashboard_uses_accounting_validated_values_when_available(user, setting
                     "passivo_circulante": {
                         "valor": 90,
                         "tipo_obtencao": "soma_contas",
-                        "contas_origem": [{"descricao": "Banco", "valor": 100}],
+                        "contas_origem": [
+                            {
+                                "descricao": "Banco A",
+                                "valor": 40,
+                                "grupo_original": "Passivo Circulante",
+                            },
+                            {
+                                "descricao": "Banco B",
+                                "valor": 60,
+                                "grupo_original": "Passivo Circulante",
+                            },
+                        ],
                     },
                     "exigivel_longo_prazo": {"valor": 0},
                     "patrimonio_liquido": {"valor": 300},
@@ -139,3 +150,5 @@ def test_dashboard_uses_accounting_validated_values_when_available(user, setting
 
     assert passivo_row["values"]["2025"]["value"] == Decimal("100")
     assert passivo_row["values"]["2025"]["display_value"] == "100"
+    assert "Banco A" in passivo_row["values"]["2025"]["origin_tooltip"]
+    assert "Banco B" in passivo_row["values"]["2025"]["origin_tooltip"]

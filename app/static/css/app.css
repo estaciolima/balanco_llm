@@ -650,6 +650,52 @@ details pre {
   font-weight: 600;
 }
 
+.sum-tooltip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  cursor: help;
+  font-size: 0.7rem;
+  font-weight: 800;
+  vertical-align: middle;
+}
+
+.sum-tooltip::after {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 30;
+  display: none;
+  width: max-content;
+  max-width: min(420px, 80vw);
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: #172033;
+  color: #fff;
+  box-shadow: var(--shadow);
+  content: attr(data-tooltip);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: left;
+  white-space: pre-line;
+}
+
+.numeric:hover .sum-tooltip::after,
+.sum-tooltip:hover::after,
+.sum-tooltip:focus::after {
+  display: block;
+}
+
 .validation-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }

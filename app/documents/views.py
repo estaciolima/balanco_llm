@@ -66,6 +66,25 @@ def format_analysis_value(value, *, is_ratio: bool = False) -> str:
     return integer if fraction == "00" else f"{integer},{fraction}"
 
 
+def _origin_accounts_for_tooltip(item: dict) -> list[dict]:
+    accounts = item.get("contas_origem_somadas") or item.get("contas_origem") or []
+    return accounts if isinstance(accounts, list) and len(accounts) > 1 else []
+
+
+def _origin_accounts_tooltip(item: dict) -> str:
+    accounts = _origin_accounts_for_tooltip(item)
+    if not accounts:
+        return ""
+    lines = []
+    for account in accounts:
+        description = account.get("descricao") or account.get("codigo") or "Conta"
+        value = format_analysis_value(account.get("valor"))
+        group = account.get("grupo_original")
+        group_suffix = f" · {group}" if group else ""
+        lines.append(f"{description}: {value}{group_suffix}")
+    return "\n".join(lines)
+
+
 def build_analysis_table(result: dict) -> list[dict[str, str | bool]]:
     fields = result.get("campos_analise", {})
     rows = []
@@ -84,6 +103,7 @@ def build_analysis_table(result: dict) -> list[dict[str, str | bool]]:
                 "original_value": (
                     format_analysis_value(item.get("valor")) if isinstance(item, dict) else "-"
                 ),
+                "origin_tooltip": _origin_accounts_tooltip(item) if isinstance(item, dict) else "",
             }
         )
     return rows

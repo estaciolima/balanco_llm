@@ -213,6 +213,8 @@ def apply_sum_account_corrections(
         if abs(difference) <= tolerance_amount:
             item["valor_validado"] = decimal_to_json(original_value)
             item["corrigido"] = False
+            item["contas_origem_somadas"] = _serialize_accounts(included_accounts)
+            item["contas_origem_excluidas"] = _serialize_accounts(excluded_accounts)
             findings.append(
                 RuleFinding(
                     rule_id=SUM_ACCOUNTS_RULE_ID,
@@ -233,6 +235,8 @@ def apply_sum_account_corrections(
         item["corrigido"] = True
         item["regra_correcao"] = SUM_ACCOUNTS_RULE_ID
         item["diferenca_validacao"] = decimal_to_json(difference)
+        item["contas_origem_somadas"] = _serialize_accounts(included_accounts)
+        item["contas_origem_excluidas"] = _serialize_accounts(excluded_accounts)
         findings.append(
             RuleFinding(
                 rule_id=SUM_ACCOUNTS_RULE_ID,
