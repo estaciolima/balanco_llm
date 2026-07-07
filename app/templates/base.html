@@ -1,0 +1,47 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Balance Import Reporting{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="shell">
+        <a class="brand" href="{% url 'company-list' %}">
+          <span class="brand-mark">
+            <span class="brand-badge">BL</span>
+            <span class="brand-copy">
+              <span class="brand-title">Balance Import Reporting</span>
+              <span class="brand-subtitle">Financial document operations</span>
+            </span>
+          </span>
+        </a>
+        <nav class="site-nav">
+          {% if request.user.is_authenticated %}
+            <a href="{% url 'company-list' %}">Companies</a>
+            <a href="{% url 'audit-event-list' %}">Audit</a>
+            <form method="post" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button type="submit">Sign out</button>
+            </form>
+          {% else %}
+            <a href="{% url 'login' %}">Sign in</a>
+          {% endif %}
+        </nav>
+      </div>
+    </header>
+    <main class="shell">
+      {% if messages %}
+        <ul class="messages">
+          {% for message in messages %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>

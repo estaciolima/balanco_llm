@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Correct Review{% endblock %}
+
+{% block content %}
+  <section class="page">
+    <div class="page-header">
+      <div>
+        <h1>Correct review task</h1>
+        <p>Adjust the extracted mapping before the approved value is published.</p>
+      </div>
+      <div class="actions">
+        <a class="button button-secondary" href="{% url 'review-detail' review_task.id %}">Back to review</a>
+      </div>
+    </div>
+    <section class="panel">
+      <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="form-actions">
+          <button type="submit">Save correction</button>
+        </div>
+      </form>
+    </section>
+  </section>
+{% endblock %}

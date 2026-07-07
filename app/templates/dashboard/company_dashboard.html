@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% load dashboard_extras %}
+
+{% block title %}Dashboard - {{ company }}{% endblock %}
+
+{% block content %}
+  <section class="page">
+    <div class="page-header">
+      <div>
+        <h1>{{ company }} dashboard</h1>
+        <p>Compare the structured financial analysis generated for each reporting year.</p>
+      </div>
+      <div class="actions">
+        <a class="button button-secondary" href="{% url 'company-detail' company.id %}">Back to company</a>
+      </div>
+    </div>
+    <section class="panel panel-stack">
+      <form method="get">
+        {{ form.as_p }}
+        <div class="form-actions">
+          <button type="submit">Apply filters</button>
+        </div>
+      </form>
+    </section>
+    <section class="panel panel-stack">
+      <div class="section-title">
+        <h2>Comparação financeira por ano</h2>
+        <span class="subtle">{{ rows|length }} value{{ rows|length|pluralize }}</span>
+      </div>
+      {% if matrix.rows %}
+        {% if matrix.source == "ai" %}
+          <p class="muted">Fonte: extração estruturada da IA. A variação compara cada ano ao período anterior disponível.</p>
+        {% endif %}
+        <table class="data-table financial-table">
+          <thead>
+            <tr>
+              <th rowspan="2">BALANÇO</th>
+              {% for period in matrix.periods %}
+                <th colspan="2" class="dashboard-period">{{ period.label }}</th>
+              {% endfor %}
+            </tr>
+            <tr>
+              {% for period in matrix.periods %}
+                <th class="numeric">Valor</th>
+                <th class="dashboard-variation-heading">Variação</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% regroup matrix.rows by section as section_groups %}
+            {% for section_group in section_groups %}
+              {% if section_group.grouper == "liquidity" %}
+                <tr class="financial-section-row">
+                  <th>LIQUIDEZ</th>
+                  {% for period in matrix.periods %}
+                    <th colspan="2">{{ period.label }}</th>
+                  {% endfor %}
+                </tr>
+              {% endif %}
+              {% for row in section_group.list %}
+                <tr class="{% if row.is_highlight %}financial-highlight{% endif %} financial-level-{{ row.display_level }}">
+                  <td>{{ row.label }}</td>
+                  {% for period in matrix.periods %}
+                    {% with cell=row.values|dict_get:period.label %}
+                      <td class="numeric"{% if cell.origin_tooltip %} title="{{ cell.origin_tooltip }}"{% endif %}>
+                        {% if cell %}
+                          {{ cell.display_value }}
+                          {% if cell.origin_tooltip %}
+                            <span class="sum-tooltip" tabindex="0" aria-label="Contas somadas" title="{{ cell.origin_tooltip }}" data-tooltip="{{ cell.origin_tooltip }}">Σ</span>
+                          {% endif %}
+                        {% else %}
+                          <span class="subtle">-</span>
+                        {% endif %}
+                      </td>
+                      <td class="dashboard-variation-cell">
+                        {% if cell %}
+                          <span class="variation variation-{{ cell.variation.direction }}" style="color: {{ cell.variation.color }}">
+                            <span class="variation-label">{{ cell.variation.label }}</span>
+                            <span class="variation-track" aria-hidden="true">
+                              <span class="variation-bar" style="width: {{ cell.variation.bar_width }}%; background-color: {{ cell.variation.color }}"></span>
+                            </span>
+                          </span>
+                        {% else %}
+                          <span class="subtle">-</span>
+                        {% endif %}
+                      </td>
+                    {% endwith %}
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="empty-state">No approved values available for the selected filters.</div>
+      {% endif %}
+      <script id="chart-data" type="application/json">{{ chart_series|safe }}</script>
+    </section>
+  </section>
+{% endblock %}

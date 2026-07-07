@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Review Task{% endblock %}
+
+{% block content %}
+  <section class="page">
+    <div class="page-header">
+      <div>
+        <h1>Review task</h1>
+        <p>Validate extracted evidence and decide whether the value is ready to publish.</p>
+      </div>
+      <div class="actions">
+        <a class="button button-secondary" href="{% url 'review-queue' %}">Back to queue</a>
+      </div>
+    </div>
+    <section class="split-layout">
+      <section class="panel panel-stack">
+        <div class="section-title">
+          <h2>Task context</h2>
+          <span class="badge">{{ review_task.get_status_display }}</span>
+        </div>
+        <dl class="meta-grid">
+          <div class="meta-item">
+            <dt>Document</dt>
+            <dd><a href="{% url 'document-detail' review_task.document.id %}">{{ review_task.document.original_filename }}</a></dd>
+          </div>
+          <div class="meta-item">
+            <dt>Reason</dt>
+            <dd>{{ review_task.get_reason_display }}</dd>
+          </div>
+          {% if review_task.extracted_line_item %}
+            <div class="meta-item">
+              <dt>Source label</dt>
+              <dd>{{ review_task.extracted_line_item.source_label }}</dd>
+            </div>
+            <div class="meta-item">
+              <dt>Raw value</dt>
+              <dd>{{ review_task.extracted_line_item.raw_value }}</dd>
+            </div>
+            <div class="meta-item">
+              <dt>Confidence</dt>
+              <dd>{{ review_task.extracted_line_item.confidence }}</dd>
+            </div>
+            <div class="meta-item">
+              <dt>Currency</dt>
+              <dd>{{ review_task.extracted_line_item.currency|default:"Not set" }}</dd>
+            </div>
+          {% endif %}
+        </dl>
+      </section>
+      <section class="panel panel-stack">
+        <div class="section-title">
+          <h2>Actions</h2>
+        </div>
+        <form method="post" action="{% url 'review-approve' review_task.id %}">
+          {% csrf_token %}
+          <button type="submit">Approve value</button>
+        </form>
+        <a class="button button-secondary" href="{% url 'review-correct' review_task.id %}">Correct extracted data</a>
+        <a class="button button-danger" href="{% url 'review-reject' review_task.id %}">Reject extraction</a>
+      </section>
+    </section>
+  </section>
+{% endblock %}

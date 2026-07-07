@@ -42,6 +42,19 @@
 
 [Gates determined based on constitution file]
 
+- Code quality: the implementation approach MUST fit the repo's existing
+  patterns, keep scope tight, and avoid unnecessary abstraction or unrelated
+  refactors.
+- Testing: the plan MUST name the automated tests that prove the changed
+  behavior, including regression coverage for defects and boundary coverage
+  for cross-layer work.
+- UX consistency: user-facing work MUST describe how copy, states, spacing,
+  interaction patterns, and accessibility will remain consistent with the
+  product.
+- Performance: the plan MUST state the relevant latency, throughput, memory,
+  or rendering budget, or explain why the change has no meaningful runtime
+  budget.
+
 ## Project Structure
 
 ### Documentation (this feature)
@@ -111,3 +124,6 @@ directories captured above]
 |-----------|------------|-------------------------------------|
 | [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
 | [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+
+Add a row for every constitution exception. If no exception is needed, leave
+this section empty.

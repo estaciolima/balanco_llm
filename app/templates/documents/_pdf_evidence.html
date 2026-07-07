@@ -1,0 +1,6 @@
+{% if review_task.extracted_line_item %}
+  <section class="panel">
+    <h2>Evidence</h2>
+    <pre>{{ review_task.extracted_line_item.evidence }}</pre>
+  </section>
+{% endif %}

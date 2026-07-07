@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}New company{% endblock %}
+
+{% block content %}
+  <section class="page">
+    <div class="page-header">
+      <div>
+        <h1>Create company</h1>
+        <p>Add the base company record before attaching documents and reporting periods.</p>
+      </div>
+      <div class="actions">
+        <a class="button button-secondary" href="{% url 'company-list' %}">Back to companies</a>
+      </div>
+    </div>
+    <section class="panel">
+      <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="form-actions">
+          <button type="submit">Save company</button>
+        </div>
+      </form>
+    </section>
+  </section>
+{% endblock %}
