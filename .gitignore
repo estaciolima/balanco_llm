@@ -13,6 +13,9 @@ build/
 .env
 .env.*
 !/.env.example
+*.sqlite
+*.sqlite3
+*.db
 app/media/
 app/staticfiles/
 coverage/
