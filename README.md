@@ -1,13 +1,8 @@
 # Balanco LLM
 
-Sistema web para extrair informações estruturadas de balanços empresariais em
-PDF, validar os resultados com regras contábeis determinísticas e apresentar os
-dados em dashboards financeiros auditáveis.
-
-Este projeto foi desenvolvido como peça de portfólio para uma transição de
-carreira para dados, IA aplicada e finanças. A proposta é demonstrar a conexão
-entre modelagem de dados, engenharia de software, LLMs, validação contábil e
-rastreabilidade operacional.
+Projeto de ciência de dados aplicada para transformar balanços empresariais em
+PDF em dados financeiros estruturados, validados por regras contábeis
+determinísticas e apresentados em dashboards auditáveis.
 
 ## Visão Geral
 
@@ -15,7 +10,7 @@ Muitos balanços empresariais chegam como PDFs pouco padronizados. Isso dificult
 a análise financeira comparável entre empresas e períodos, principalmente quando
 os dados precisam ser auditáveis.
 
-O Balanco LLM transforma esse fluxo em uma aplicação completa:
+O Balanco LLM transforma esse fluxo em um pipeline analítico:
 
 - recebe PDFs de balanços por empresa;
 - preserva o documento original;
@@ -83,6 +78,24 @@ flowchart TB
     V --> A[Audit events]
     DB --> D[Dashboard]
 ```
+
+## Abordagem de Desenvolvimento
+
+O projeto foi conduzido com apoio de IA generativa de forma estruturada. Em vez
+de usar prompts isolados, utilizei Spec Kit para organizar especificação,
+planejamento e tarefas de implementação em artefatos versionados.
+
+Essa abordagem ajudou a manter:
+
+- requisitos explícitos para o pipeline de extração e validação;
+- decisões técnicas documentadas antes da implementação;
+- tarefas pequenas e verificáveis;
+- separação entre geração estruturada por LLM e validação determinística;
+- rastreabilidade entre problema de negócio, regras contábeis e código.
+
+A ênfase do projeto está na construção de um fluxo de dados confiável para
+documentos financeiros: entrada não estruturada, estruturação por IA, validação
+contábil, auditoria e visualização analítica.
 
 ## Funcionalidades
 
@@ -281,8 +294,7 @@ padrão:
 - notebooks e JSONs de experimentação;
 - exemplos brutos de dados sensíveis.
 
-As screenshots usadas no README devem conter apenas dados autorizados,
-sintéticos ou anonimizados.
+As screenshots usadas no README contêm dados anonimizados.
 
 ## O Que Este Projeto Demonstra
 
@@ -292,15 +304,11 @@ aplicada ao mercado financeiro:
 - transformação de documentos não estruturados em dados analisáveis;
 - uso pragmático de LLMs em pipeline de dados;
 - validação determinística para reduzir risco de alucinação;
-- modelagem relacional para empresas, documentos, extrações e auditoria;
-- processamento assíncrono com filas;
-- construção de produto web com Django;
+- modelagem de um fluxo analítico com entrada, processamento, validação e saída;
+- uso de IA generativa como apoio estruturado ao desenvolvimento;
 - preocupação com rastreabilidade, custo e governança.
 
 ## Próximos Passos Possíveis
 
-- Criar dataset público/sintético de demonstração.
-- Adicionar exportação CSV/Excel dos dados validados.
-- Melhorar métricas de qualidade da extração por campo.
-- Incluir comparação entre empresas.
-- Publicar uma demo controlada ou vídeo curto de apresentação.
+- Processar outros documentos contábeis, além de balanços patrimoniais;
+- Explorar outras estratégias mais complexas com LLM, como: utilização de multiagentes; fine-tuning baseada em anotações.
