@@ -19,8 +19,15 @@ def decimal_from_env(name: str) -> Decimal | None:
         raise ImproperlyConfigured(f"{name} must be a decimal number.") from exc
 
 
+def bool_from_env(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
-DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
+DEBUG = bool_from_env("DJANGO_DEBUG", False)
 ALLOWED_HOSTS = [host for host in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",") if host]
 CSRF_TRUSTED_ORIGINS = [
     origin for origin in os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if origin
@@ -125,8 +132,8 @@ ACCOUNTING_VALIDATION_RATIO_TOLERANCE = (
     decimal_from_env("ACCOUNTING_VALIDATION_RATIO_TOLERANCE") or Decimal("0.01")
 )
 AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = bool_from_env("SESSION_COOKIE_SECURE", not DEBUG)
+CSRF_COOKIE_SECURE = bool_from_env("CSRF_COOKIE_SECURE", not DEBUG)
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 

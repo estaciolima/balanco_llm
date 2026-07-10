@@ -13,11 +13,14 @@ build/
 .env
 .env.*
 !/.env.example
+!/.env.real.example
 *.sqlite
 *.sqlite3
 *.db
 app/media/
+media/
 app/staticfiles/
+celerybeat-schedule
 coverage/
 htmlcov/
 playwright-report/

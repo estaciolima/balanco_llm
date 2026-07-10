@@ -23,7 +23,9 @@ notebooks/
 artigo/
 paper/
 app/media/
+media/
 app/staticfiles/
+celerybeat-schedule
 specs/
 .idea/
 .vscode/

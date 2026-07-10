@@ -1,67 +1,176 @@
 # Balanco LLM
 
-Aplicacao para receber PDFs de balancos empresariais, preservar os arquivos
-originais, extrair e padronizar os dados e disponibilizar comparacoes em
-dashboard.
+Sistema web para extrair informações estruturadas de balanços empresariais em
+PDF, validar os resultados com regras contábeis determinísticas e apresentar os
+dados em dashboards financeiros auditáveis.
 
-## O que o projeto faz
+Este projeto foi desenvolvido como peça de portfólio para uma transição de
+carreira para dados, IA aplicada e finanças. A proposta é demonstrar a conexão
+entre modelagem de dados, engenharia de software, LLMs, validação contábil e
+rastreabilidade operacional.
 
-- upload de PDFs por empresa
-- preservacao do arquivo bruto
-- pipeline de extracao e padronizacao
-- fila de revisao humana
-- dashboard com comparacao entre periodos
-- trilha de auditoria
+## Visão Geral
 
-## Requisitos
+Muitos balanços empresariais chegam como PDFs pouco padronizados. Isso dificulta
+a análise financeira comparável entre empresas e períodos, principalmente quando
+os dados precisam ser auditáveis.
 
-- Python 3.12
-- `pip`
-- Docker Desktop opcional, para subir toda a stack com Postgres e Redis
+O Balanco LLM transforma esse fluxo em uma aplicação completa:
 
-## Como rodar
+- recebe PDFs de balanços por empresa;
+- preserva o documento original;
+- extrai texto e tabelas do PDF;
+- usa LLM para gerar um JSON financeiro estruturado;
+- aplica validações contábeis determinísticas sobre o output da IA;
+- registra eventos e correções em trilha de auditoria;
+- disponibiliza os dados em dashboard para comparação entre períodos.
 
-Voce pode rodar de duas formas:
+## Demonstração Visual
 
-1. localmente, com SQLite e sem containers
-2. com Docker Compose, usando Postgres e Redis
+### Dashboard financeiro
 
-## Opcao 1: rodar localmente
+Visão consolidada dos valores extraídos e organizados por empresa/período.
 
-### 1. Criar e ativar o ambiente virtual
+![Dashboard financeiro](docs/screenshots/01-dashboard.png)
 
-Se o `.venv` ja existir:
+### Upload de documento
 
-```powershell
-.venv\Scripts\Activate.ps1
+Entrada do pipeline: o usuário cadastra o documento e envia o PDF do balanço.
+
+![Upload de documento](docs/screenshots/02-upload-documento.png)
+
+### Validação contábil
+
+Depois da extração estruturada, regras determinísticas verificam consistência,
+recalculam campos quando possível e registram achados.
+
+![Validação contábil](docs/screenshots/03-validacao-contabil.png)
+
+### Auditoria
+
+Eventos do pipeline, validações e correções ficam registrados para reconstruir
+como o dado final foi produzido.
+
+![Trilha de auditoria](docs/screenshots/04-auditoria.png)
+
+## Pipeline
+
+```mermaid
+flowchart LR
+    A[PDF de balanço] --> B[Upload e armazenamento]
+    B --> C[Extração de texto e tabelas]
+    C --> D[LLM gera JSON financeiro]
+    D --> E[Validação contábil determinística]
+    E --> F[Dashboard financeiro]
+    E --> G[Auditoria e rastreabilidade]
+    F --> G
 ```
 
-Se ainda nao existir:
+## Arquitetura
+
+```mermaid
+flowchart TB
+    U[Usuário] --> W[Django Web]
+    W --> DB[(PostgreSQL)]
+    W --> M[Armazenamento de PDFs]
+    W --> Q[Redis / Celery]
+    Q --> P[Pipeline de processamento]
+    P --> X[Extração de texto e tabelas]
+    X --> L[OpenAI API]
+    L --> R[JSON estruturado]
+    R --> V[Regras contábeis]
+    V --> DB
+    V --> A[Audit events]
+    DB --> D[Dashboard]
+```
+
+## Funcionalidades
+
+- Cadastro de empresas e períodos.
+- Upload e preservação de PDFs originais.
+- Processamento assíncrono com Celery e Redis.
+- Extração de texto/tabelas com bibliotecas Python para PDF.
+- Estruturação financeira via OpenAI API.
+- Validação contábil sem nova chamada à IA.
+- Correção determinística de campos calculáveis por soma de contas.
+- Checagem da equação patrimonial básica.
+- Estimativa de tokens e custo da extração.
+- Dashboard server-rendered em Django.
+- Auditoria de upload, processamento, extração e validação.
+
+## Regras Contábeis
+
+O sistema não trata a saída da LLM como verdade final. A extração estruturada é
+validada por regras determinísticas, por exemplo:
+
+- `SUM_ACCOUNTS_001`: recalcula campos cujo valor deveria ser a soma de contas
+  de origem e registra correção quando a diferença passa da tolerância.
+- `BALANCE_EQUATION_001`: avalia a consistência básica do balanço pela relação
+  entre ativos, passivos e patrimônio líquido.
+
+Essa separação é intencional: a LLM estrutura dados desorganizados, enquanto a
+camada contábil aplica regras explícitas, testáveis e auditáveis.
+
+## Stack
+
+- Python 3.12
+- Django 5
+- PostgreSQL
+- Redis
+- Celery
+- OpenAI API
+- PyMuPDF, pdfplumber e OCRmyPDF
+- Docker Compose
+- pytest e pytest-django
+
+## Estrutura do Projeto
+
+```text
+app/
+  accounting/        validação contábil determinística
+  audit/             trilha de auditoria
+  companies/         cadastro de empresas e períodos
+  config/            settings, urls e Celery
+  dashboard/         visualizações financeiras
+  documents/         upload e armazenamento de PDFs
+  extraction/        pipeline de extração estruturada
+  standardization/   padronização de valores
+  templates/         telas server-rendered
+  tests/             testes unitários, integração e contrato
+
+docs/
+  screenshots/       imagens usadas neste README
+
+docker/
+  web.Dockerfile
+  worker.Dockerfile
+```
+
+## Como Rodar Localmente
+
+### Opção 1: ambiente local simples
+
+Crie e ative o ambiente virtual:
 
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 ```
 
-### 2. Instalar dependencias
+Instale as dependências:
 
 ```powershell
 python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
 ```
 
-### 3. Configurar variaveis de ambiente
-
-Para rodar localmente de forma simples, voce pode usar o fallback do SQLite e
-nao precisa definir `DATABASE_URL`.
-
-Se quiser manter um arquivo de ambiente local:
+Crie um `.env` local:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Ajustes recomendados no `.env` para execucao local sem Docker:
+Para rodar sem Docker, ajuste o `.env`:
 
 ```text
 DJANGO_DEBUG=true
@@ -72,11 +181,9 @@ MEDIA_ROOT=app/media
 MEDIA_URL=/media/
 ```
 
-Observacao: a `DATABASE_URL` do `.env.example` aponta para o servico `postgres`
-do Docker Compose. Fora do Docker, remova essa variavel ou troque por uma URL
-valida do seu banco.
+Remova `DATABASE_URL` ou troque por uma URL válida fora do Docker.
 
-### 4. Aplicar migrations e carregar dados iniciais
+Prepare o banco:
 
 ```powershell
 python app/manage.py migrate
@@ -85,40 +192,22 @@ python app/manage.py bootstrap_roles
 python app/manage.py createsuperuser
 ```
 
-### 5. Subir a aplicacao
+Suba a aplicação:
 
 ```powershell
 python app/manage.py runserver
 ```
 
-Abra:
+Acesse:
 
 - `http://127.0.0.1:8000/login/`
 - `http://127.0.0.1:8000/admin/`
 
-### 6. Rodar testes
-
-```powershell
-python -m pytest app/tests
-```
-
-## Opcao 2: rodar com Docker Compose
-
-Essa opcao sobe:
-
-- Django web
-- Celery worker
-- Celery beat
-- PostgreSQL
-- Redis
-
-### 1. Subir os containers
+### Opção 2: Docker Compose
 
 ```powershell
 docker compose up --build
 ```
-
-### 2. Aplicar migrations e carregar dados iniciais
 
 Em outro terminal:
 
@@ -129,71 +218,89 @@ docker compose exec web python app/manage.py bootstrap_roles
 docker compose exec web python app/manage.py createsuperuser
 ```
 
+### Opção 3: teste real com OpenAI, Postgres, Redis e worker
 
-### 3. Acessar a aplicacao
+Crie um `.env` local a partir do exemplo realista:
 
-- `http://127.0.0.1:8000/login/`
-- `http://127.0.0.1:8000/admin/`
+```powershell
+Copy-Item .env.real.example .env
+```
 
-### 4. Rodar testes via container
+Preencha no `.env`:
+
+```text
+SECRET_KEY=<uma chave longa e aleatória>
+OPENAI_API_KEY=<sua chave real>
+OPENAI_BALANCE_EXTRACTION_ENABLED=true
+```
+
+O `.env` é ignorado pelo Git. Não coloque chaves reais em `.env.example`.
+
+Para teste local via HTTP, mantenha:
+
+```text
+SESSION_COOKIE_SECURE=false
+CSRF_COOKIE_SECURE=false
+```
+
+Suba a stack:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.real.yml up --build
+```
+
+Prepare o banco:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.real.yml exec web python app/manage.py migrate
+docker compose -f docker-compose.yml -f docker-compose.real.yml exec web python app/manage.py load_standard_line_items
+docker compose -f docker-compose.yml -f docker-compose.real.yml exec web python app/manage.py bootstrap_roles
+docker compose -f docker-compose.yml -f docker-compose.real.yml exec web python app/manage.py createsuperuser
+```
+
+## Testes
+
+```powershell
+python -m pytest app/tests
+```
+
+Via Docker:
 
 ```powershell
 docker compose exec web pytest app/tests
 ```
 
-## Worker e processamento
+## Segurança e Dados Sensíveis
 
-No modo local simples, usar `CELERY_TASK_ALWAYS_EAGER=true` ajuda bastante:
-as tasks rodam no mesmo processo do Django e voce nao precisa iniciar Redis nem
-worker para testar upload e processamento.
+Arquivos locais com dados reais não devem ser versionados. O projeto ignora por
+padrão:
 
-Se quiser rodar Celery localmente com Redis:
+- `.env` e variações locais;
+- bancos SQLite;
+- arquivos enviados para `app/media/` e `media/`;
+- notebooks e JSONs de experimentação;
+- exemplos brutos de dados sensíveis.
 
-```powershell
-celery -A config.celery_app worker -l info
-celery -A config.celery_app beat -l info
-```
+As screenshots usadas no README devem conter apenas dados autorizados,
+sintéticos ou anonimizados.
 
-## Comandos uteis
+## O Que Este Projeto Demonstra
 
-```powershell
-python app/manage.py migrate
-python app/manage.py createsuperuser
-python app/manage.py load_standard_line_items
-python app/manage.py bootstrap_roles
-python app/manage.py import_balance_pdfs --help
-python app/manage.py reprocess_documents --help
-python -m pytest app/tests
-```
+Este projeto foi pensado para comunicar competências úteis em ciência de dados
+aplicada ao mercado financeiro:
 
-## Estrutura principal
+- transformação de documentos não estruturados em dados analisáveis;
+- uso pragmático de LLMs em pipeline de dados;
+- validação determinística para reduzir risco de alucinação;
+- modelagem relacional para empresas, documentos, extrações e auditoria;
+- processamento assíncrono com filas;
+- construção de produto web com Django;
+- preocupação com rastreabilidade, custo e governança.
 
-```text
-app/
-  companies/         cadastro de empresas
-  documents/         upload e armazenamento de PDFs
-  extraction/        pipeline de extracao
-  standardization/   padronizacao dos dados
-  review/            revisao humana
-  dashboard/         consultas e visualizacoes
-  audit/             trilha de auditoria
-  config/            settings, urls e celery
-```
+## Próximos Passos Possíveis
 
-## Estado atual
-
-- testes automatizados passam localmente
-- E2E com Playwright existem, mas podem ser ignorados se o browser nao estiver instalado
-- OCR fallback ainda esta em modo inicial
-
-## Fluxo recomendado para desenvolvimento
-
-Para iterar mais rapido no dia a dia:
-
-1. ativar `.venv`
-2. rodar com `CELERY_TASK_ALWAYS_EAGER=true`
-3. executar `python app/manage.py runserver`
-4. rodar `python -m pytest app/tests`
-
-Isso evita depender de Postgres, Redis e worker enquanto voce evolui tela,
-modelo e regras de negocio.
+- Criar dataset público/sintético de demonstração.
+- Adicionar exportação CSV/Excel dos dados validados.
+- Melhorar métricas de qualidade da extração por campo.
+- Incluir comparação entre empresas.
+- Publicar uma demo controlada ou vídeo curto de apresentação.
