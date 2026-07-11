@@ -1,4 +1,4 @@
-# Balanco LLM
+# Balanço LLM
 
 Projeto de ciência de dados aplicada para transformar balanços empresariais em
 PDF em dados financeiros estruturados, validados por regras contábeis
